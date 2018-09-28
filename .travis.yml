@@ -1,0 +1,77 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+language: groovy
+
+sudo: required
+
+matrix:
+  include:
+    - jdk: oraclejdk8
+    - jdk: openjdk7
+    - jdk: openjdk6
+addons:
+  apt:
+    packages:
+      - openjdk-6-jdk
+
+dist: trusty
+
+# use bouncycastle security provider to avoid:
+# javax.net.ssl.SSLException: ... java.security.InvalidKeyException: EC parameters error
+before_install:
+  - |
+    if [ $TRAVIS_JDK_VERSION == "openjdk7" ]; then
+      JAVA_ETC=java-7-openjdk
+    elif [ $TRAVIS_JDK_VERSION == "openjdk6" ]; then
+      JAVA_ETC=java-6-openjdk
+    fi
+    if [ $TRAVIS_JDK_VERSION == "openjdk6" ] || [ $TRAVIS_JDK_VERSION == "openjdk7" ]; then
+      BCPROV_FILENAME=bcprov-ext-jdk15on-158.jar
+      wget "https://bouncycastle.org/download/${BCPROV_FILENAME}"
+      sudo mv $BCPROV_FILENAME ${JAVA_HOME}/jre/lib/ext
+      sudo perl -pi.bak -e 's/^(security\.provider\.)([0-9]+)/$1.($2+1)/ge' /etc/${JAVA_ETC}/security/java.security
+      echo "security.provider.1=org.bouncycastle.jce.provider.BouncyCastleProvider" | sudo tee -a /etc/${JAVA_ETC}/security/java.security
+    fi
+
+install: true
+
+# use default mem settings for java 8 only
+# avoid getting gradle zip and plugins using openjdk6
+before_script:
+  - |
+    if [ $TRAVIS_JDK_VERSION == "openjdk6" ] || [ $TRAVIS_JDK_VERSION == "openjdk7" ]; then
+      export _JAVA_OPTIONS=-Xms1024m\ -Xmx2048m
+    else
+      unset _JAVA_OPTIONS
+    fi
+    if [ $TRAVIS_JDK_VERSION == "openjdk6" ]; then
+      jdk_switcher use oraclejdk8
+      ./gradlew assemble
+      jdk_switcher use openjdk6
+    fi
+
+script: travis_wait 60 ./gradlew clean test
+
+# As recommended in:
+# https://docs.travis-ci.com/user/languages/java/#Caching
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
+cache:
+  directories:
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/

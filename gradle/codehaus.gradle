@@ -1,0 +1,62 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one
+ *  or more contributor license agreements.  See the NOTICE file
+ *  distributed with this work for additional information
+ *  regarding copyright ownership.  The ASF licenses this file
+ *  to you under the Apache License, Version 2.0 (the
+ *  "License"); you may not use this file except in compliance
+ *  with the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
+import com.github.sardine.*
+import com.github.sardine.impl.*
+import groovy.io.*
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.github.lookfirst:sardine:5.0.1'
+    }
+}
+
+task htmlPush {
+    //inputs.files syncDoc.inputs.files
+
+    doLast {
+        def sardine = SardineFactory.begin(System.getProperty('groovy.deploy.username'), System.getProperty('groovy.deploy.password'))
+        def serverBase = "https://dav.codehaus.org/groovy/"
+        //sardine.list(serverBase).each {println it}
+        def copyConf = ["gapi":file("$buildDir/allgroovydoc"), "api":file("$buildDir/alljavadoc")]
+
+        copyConf.each { targetDirPart, base ->
+            def basePath = base.canonicalPath
+            base.eachFileRecurse {
+                def name = it.canonicalPath.substring(basePath.length()+1)
+                def target = serverBase+targetDirPart+"/"+name
+                if (it.directory) {
+                    println "MKCOL $target"
+                    try {
+                        sardine.createDirectory(target+"/");
+                    } catch (SardineException se) {
+                        //ignore 405, thrown for existing directories
+                        if (se.statusCode != 405) throw se 
+                    }
+                } else {
+                    println "PUT $target"
+                    sardine.put (target, it.newInputStream())
+                }
+                
+            }
+        }
+    }
+}
