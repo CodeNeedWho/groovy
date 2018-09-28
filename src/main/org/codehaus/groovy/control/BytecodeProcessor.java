@@ -18,6 +18,8 @@
  */
 package org.codehaus.groovy.control;
 
+import org.codehaus.groovy.ast.ClassNode;
+
 public interface BytecodeProcessor {
-    byte[] processBytecode(String name, byte[] original);
+    byte[] processBytecode(ClassNode node, byte[] original);
 }

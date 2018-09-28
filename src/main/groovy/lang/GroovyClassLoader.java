@@ -519,7 +519,7 @@ public class GroovyClassLoader extends URLClassLoader {
             BytecodeProcessor bytecodePostprocessor = unit.getConfiguration().getBytecodePostprocessor();
             byte[] fcode = code;
             if (bytecodePostprocessor!=null) {
-                fcode = bytecodePostprocessor.processBytecode(classNode.getName(), fcode);
+                fcode = bytecodePostprocessor.processBytecode(classNode, fcode);
             }
             GroovyClassLoader cl = getDefiningClassLoader();
             Class theClass = cl.defineClass(classNode.getName(), fcode, 0, fcode.length, unit.getAST().getCodeSource());
