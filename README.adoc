@@ -1,12 +1,2 @@
-== How to use
-    allprojects {
-      repositories {
-        ...
-        maven { url 'https://jitpack.io' }
-      }
-    }
-    
-    dependencies {
-      implementation 'com.github.User:Repo:Tag'
-    }
-
+== 说明
+复制的groovy项目，进行了修改，使其能够在安卓上运行。
