@@ -295,7 +295,8 @@ public class GroovyClassLoader extends URLClassLoader {
             return answer;
         }
     }
-
+    protected void addSource(CompilationUnit unit){
+    }
     private Class doParseClass(GroovyCodeSource codeSource) {
         validate(codeSource);
         Class answer;  // Was neither already loaded nor compiling, so compile and add to cache.
@@ -315,7 +316,7 @@ public class GroovyClassLoader extends URLClassLoader {
                 su = unit.addSource(codeSource.getName(), codeSource.getScriptText());
             }
         }
-
+        addSource(unit);
         ClassCollector collector = createCollector(unit, su);
         unit.setClassgenCallback(collector);
         int goalPhase = Phases.CLASS_GENERATION;
